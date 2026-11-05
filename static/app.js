@@ -154,7 +154,7 @@ function closePinModal() {
 // ---------------------------------------------------------------------------
 
 async function claimPost(id) {
-  const claimed_by = prompt("Your name or organisation (shelter, food bank, etc.):");
+  const claimed_by = prompt("Your name or organization (shelter, food bank, etc.):");
   if (!claimed_by || !claimed_by.trim()) return;
 
   const res = await fetch(`/api/posts/${id}/claim`, {
