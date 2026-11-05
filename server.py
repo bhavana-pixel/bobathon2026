@@ -3,7 +3,7 @@ import hashlib
 import random
 import sqlite3
 import string
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask, g, jsonify, request, send_from_directory
@@ -210,13 +210,22 @@ def create_post():
     if not all(data.get(f) for f in required):
         return jsonify({"error": "Missing required fields"}), 400
 
+    # pickup_by arrives as a naive local datetime string ("YYYY-MM-DDTHH:MM").
+    # Parse it as local time and convert to UTC so comparisons against
+    # SQLite's datetime('now') (which is always UTC) are correct.
+    try:
+        pickup_local = datetime.fromisoformat(data["pickup_by"])
+        pickup_utc = pickup_local.astimezone(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    except (ValueError, TypeError):
+        return jsonify({"error": "Invalid pickup_by format"}), 400
+
     pin = generate_pin()
     db = get_db()
     cur = db.execute(
         "INSERT INTO posts (donor_name, food_description, quantity, pickup_by, location, pin_hash, is_demo) "
         "VALUES (?, ?, ?, ?, ?, ?, 0)",
         (data["donor_name"], data["food_description"], data["quantity"],
-         data["pickup_by"], data["location"], hash_pin(pin)),
+         pickup_utc, data["location"], hash_pin(pin)),
     )
     db.commit()
     return jsonify({"id": cur.lastrowid, "pin": pin}), 201

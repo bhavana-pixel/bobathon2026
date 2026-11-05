@@ -15,8 +15,9 @@ function fmt(dtStr) {
 }
 
 function fmtPickup(dtStr) {
-  // pickup_by is stored without timezone — treat as local
-  const d = new Date(dtStr.includes("T") ? dtStr : dtStr.replace(" ", "T"));
+  // pickup_by is stored in UTC — append "Z" so the browser converts to local time
+  const normalized = dtStr.includes("T") ? dtStr : dtStr.replace(" ", "T");
+  const d = new Date(normalized.endsWith("Z") ? normalized : normalized + "Z");
   return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
