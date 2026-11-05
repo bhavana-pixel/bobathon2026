@@ -34,6 +34,17 @@ def close_db(exc):
         db.close()
 
 
+# Max claims allowed per device fingerprint within the rolling window
+CLAIM_RATE_LIMIT = 3
+CLAIM_RATE_WINDOW_HOURS = 24
+
+
+def device_fingerprint(ip: str, user_agent: str) -> str:
+    """Return a stable, opaque hash for an IP + User-Agent pair."""
+    raw = f"{ip}|{user_agent}"
+    return hashlib.sha256(raw.encode()).hexdigest()
+
+
 def init_db():
     with sqlite3.connect(DB_PATH) as db:
         db.execute("""
@@ -55,6 +66,14 @@ def init_db():
             db.execute("ALTER TABLE posts ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0")
         except sqlite3.OperationalError:
             pass  # Column already exists
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS claim_attempts (
+                id          INTEGER PRIMARY KEY AUTOINCREMENT,
+                fingerprint TEXT    NOT NULL,
+                claimed_at  TEXT    NOT NULL DEFAULT (datetime('now'))
+            )
+        """)
+        db.execute("CREATE INDEX IF NOT EXISTS idx_claim_attempts_fp ON claim_attempts(fingerprint)")
         db.commit()
 
 
@@ -78,6 +97,11 @@ def expire_posts():
     with sqlite3.connect(DB_PATH) as db:
         db.execute(
             "DELETE FROM posts WHERE pickup_by < datetime('now') AND claimed_by IS NULL AND is_demo = 0"
+        )
+        # Prune claim_attempts older than the rate-limit window
+        db.execute(
+            "DELETE FROM claim_attempts WHERE claimed_at < datetime('now', ?)",
+            (f"-{CLAIM_RATE_WINDOW_HOURS} hours",)
         )
         db.commit()
 
@@ -135,6 +159,9 @@ DEMO_ENTRIES = [
 def seed_demo():
     """Insert demo entries into the database (clears existing demo rows first)."""
     clear_demo()
+    with sqlite3.connect(DB_PATH) as db:
+        db.execute("DELETE FROM claim_attempts")
+        db.commit()
     now = datetime.now()
     with sqlite3.connect(DB_PATH) as db:
         for entry in DEMO_ENTRIES:
@@ -238,7 +265,23 @@ def claim_post(post_id):
     if not claimed_by:
         return jsonify({"error": "claimed_by is required"}), 400
 
+    # --- Rate limiting: max CLAIM_RATE_LIMIT claims per device per 24 h ---
+    ip = request.remote_addr or ""
+    ua = request.headers.get("User-Agent", "")
+    fp = device_fingerprint(ip, ua)
+
     db = get_db()
+    window_start = (datetime.now(timezone.utc) - timedelta(hours=CLAIM_RATE_WINDOW_HOURS)).strftime("%Y-%m-%d %H:%M:%S")
+    recent = db.execute(
+        "SELECT COUNT(*) FROM claim_attempts WHERE fingerprint = ? AND claimed_at >= ?",
+        (fp, window_start)
+    ).fetchone()[0]
+    if recent >= CLAIM_RATE_LIMIT:
+        return jsonify({
+            "error": f"Rate limit exceeded: you may only claim {CLAIM_RATE_LIMIT} items per {CLAIM_RATE_WINDOW_HOURS}-hour period."
+        }), 429
+    # ----------------------------------------------------------------------
+
     row = db.execute(
         "SELECT id, claimed_by FROM posts WHERE id = ? AND pickup_by > datetime('now')",
         (post_id,)
@@ -249,6 +292,7 @@ def claim_post(post_id):
         return jsonify({"error": "Already claimed"}), 409
 
     db.execute("UPDATE posts SET claimed_by = ? WHERE id = ?", (claimed_by, post_id))
+    db.execute("INSERT INTO claim_attempts (fingerprint) VALUES (?)", (fp,))
     db.commit()
     return jsonify({"ok": True})
 
