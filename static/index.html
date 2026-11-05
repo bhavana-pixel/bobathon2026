@@ -8,14 +8,29 @@
 </head>
 <body>
 
+<!-- Hero header -->
 <header>
-  <div>
-    <h1><span>🌱</span>FoodRescue</h1>
+  <button id="theme-toggle" onclick="toggleTheme()" title="Toggle dark/light mode">
+    <span id="theme-icon">🌙</span> <span id="theme-label">Dark</span>
+  </button>
+  <div class="hero">
+    <h1 class="logo">
+      <span class="logo-char" style="--i:0">F</span><span
+            class="logo-char" style="--i:1">o</span><span
+            class="logo-char" style="--i:2">o</span><span
+            class="logo-char" style="--i:3">d</span><span
+            class="logo-char logo-gap" style="--i:4">R</span><span
+            class="logo-char" style="--i:5">e</span><span
+            class="logo-char" style="--i:6">s</span><span
+            class="logo-char" style="--i:7">c</span><span
+            class="logo-char" style="--i:8">u</span><span
+            class="logo-char" style="--i:9">e</span>
+    </h1>
+    <p class="hero-sub">Connect surplus food with people who need it — before it's too late.</p>
   </div>
-  <p>Connect surplus food with people who need it — before it's too late.</p>
 </header>
 
-<!-- Demo mode banner (hidden until JS confirms demo mode) -->
+<!-- Demo mode banner -->
 <div id="demo-banner" style="display:none">
   <div class="demo-inner">
     <span class="demo-label">🎬 Demo Mode</span>
@@ -70,15 +85,17 @@
   <!-- Board -->
   <div id="board"></div>
   <div id="empty" style="display:none">
-    <p>🥡</p>
-    <p>No food available right now.<br>Be the first to post something!</p>
+    <div class="empty-icon">🥡</div>
+    <p>No food available right now.</p>
+    <p class="empty-sub">Be the first to post something!</p>
   </div>
 </main>
 
-<!-- PIN modal (shown after a successful post) -->
+<!-- PIN modal -->
 <div id="pin-modal" class="modal-overlay" style="display:none">
   <div class="modal">
-    <h3>🔑 Save Your PIN</h3>
+    <div class="modal-icon">🔑</div>
+    <h3>Save Your PIN</h3>
     <p>You'll need this 4-digit PIN if you want to delete your post later. We don't store it — write it down!</p>
     <div class="pin-display" id="pin-value">—</div>
     <div class="modal-actions">
@@ -86,6 +103,19 @@
     </div>
   </div>
 </div>
+
+<!-- Footer -->
+<footer>
+  <div class="footer-inner">
+    <div class="about-section">
+      <h4>About Us</h4>
+      <p>We built this application to help food insecure families all across the world. With rising poverty rates and world hunger, we are committed to solving food insecurity through technology.</p>
+    </div>
+    <div class="footer-tm">
+      🌱 FoodRescue™ &nbsp;·&nbsp; All rights reserved &nbsp;·&nbsp; © 2026
+    </div>
+  </div>
+</footer>
 
 <script src="/static/app.js"></script>
 </body>

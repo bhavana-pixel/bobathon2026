@@ -227,8 +227,28 @@ async function demoClear() {
 }
 
 // ---------------------------------------------------------------------------
+// Theme toggle
+// ---------------------------------------------------------------------------
+
+function applyTheme(dark) {
+  document.documentElement.setAttribute("data-theme", dark ? "dark" : "light");
+  document.getElementById("theme-icon").textContent  = dark ? "☀️" : "🌙";
+  document.getElementById("theme-label").textContent = dark ? "Light" : "Dark";
+}
+
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute("data-theme") === "dark";
+  const next = !isDark;
+  applyTheme(next);
+  localStorage.setItem("fr-theme", next ? "dark" : "light");
+}
+
+// ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
+
+// Restore saved theme preference (default: light)
+applyTheme(localStorage.getItem("fr-theme") === "dark");
 
 initDemoMode();
 loadBoard();
