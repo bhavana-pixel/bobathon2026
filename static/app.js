@@ -2,6 +2,7 @@
 // State
 // ---------------------------------------------------------------------------
 let formVisible = false;
+let demoMode = false;
 
 // ---------------------------------------------------------------------------
 // Utilities
@@ -45,16 +46,20 @@ async function loadBoard() {
 
 function buildCard(post) {
   const claimed = !!post.claimed_by;
+  const isDemo = !!post.is_demo;
   const card = document.createElement("div");
-  card.className = "card" + (claimed ? " claimed" : "");
+  card.className = "card" + (claimed ? " claimed" : "") + (isDemo ? " demo-card" : "");
   card.dataset.id = post.id;
 
   card.innerHTML = `
     <div class="card-header">
       <span class="card-donor">${esc(post.donor_name)}</span>
-      <span class="card-badge ${claimed ? "claimed-badge" : ""}">
-        ${claimed ? "Claimed" : "Available"}
-      </span>
+      <div style="display:flex;gap:6px;align-items:center">
+        ${isDemo ? `<span class="demo-pill">Sample</span>` : ""}
+        <span class="card-badge ${claimed ? "claimed-badge" : ""}">
+          ${claimed ? "Claimed" : "Available"}
+        </span>
+      </div>
     </div>
     <div class="card-food">${esc(post.food_description)}</div>
     <div class="card-meta">
@@ -66,7 +71,7 @@ function buildCard(post) {
     ${!claimed ? `
     <div class="card-actions">
       <button class="btn-claim" onclick="claimPost(${post.id})">Claim</button>
-      <button class="btn-delete" onclick="deletePost(${post.id})">Delete (mine)</button>
+      <button class="btn-delete" onclick="deletePost(${post.id})">${isDemo ? "Delete (PIN: 0000)" : "Delete (mine)"}</button>
     </div>` : ""}
   `;
   return card;
@@ -196,9 +201,35 @@ async function deletePost(id) {
 }
 
 // ---------------------------------------------------------------------------
+// Demo mode controls
+// ---------------------------------------------------------------------------
+
+async function initDemoMode() {
+  const res = await fetch("/api/demo/status");
+  const data = await res.json();
+  demoMode = data.demo_mode;
+  if (demoMode) {
+    document.getElementById("demo-banner").style.display = "block";
+  }
+}
+
+async function demoSeed() {
+  const res = await fetch("/api/demo/seed", { method: "POST" });
+  if (!res.ok) { alert("Could not seed demo data."); return; }
+  loadBoard();
+}
+
+async function demoClear() {
+  const res = await fetch("/api/demo/clear", { method: "DELETE" });
+  if (!res.ok) { alert("Could not clear demo data."); return; }
+  loadBoard();
+}
+
+// ---------------------------------------------------------------------------
 // Bootstrap
 // ---------------------------------------------------------------------------
 
+initDemoMode();
 loadBoard();
 // Auto-refresh every 30 seconds
 setInterval(loadBoard, 30_000);

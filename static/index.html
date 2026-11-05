@@ -15,6 +15,18 @@
   <p>Connect surplus food with people who need it — before it's too late.</p>
 </header>
 
+<!-- Demo mode banner (hidden until JS confirms demo mode) -->
+<div id="demo-banner" style="display:none">
+  <div class="demo-inner">
+    <span class="demo-label">🎬 Demo Mode</span>
+    <span class="demo-hint">All sample posts use PIN <strong>0000</strong></span>
+    <div class="demo-actions">
+      <button class="btn-demo-seed" onclick="demoSeed()">↺ Reset Samples</button>
+      <button class="btn-demo-clear" onclick="demoClear()">✕ Clear Samples</button>
+    </div>
+  </div>
+</div>
+
 <main>
   <!-- Controls bar -->
   <div class="controls">

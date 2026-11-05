@@ -172,3 +172,57 @@ textarea { resize: vertical; min-height: 64px; }
   .form-grid .full { grid-column: 1; }
   header { flex-direction: column; align-items: flex-start; gap: .3rem; }
 }
+
+/* ── Demo banner ── */
+#demo-banner {
+  background: #fff8e1;
+  border-bottom: 2px solid #f59e0b;
+  padding: .6rem 2rem;
+}
+.demo-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.demo-label {
+  font-weight: 700;
+  font-size: .9rem;
+  color: #92400e;
+  white-space: nowrap;
+}
+.demo-hint {
+  font-size: .85rem;
+  color: #78350f;
+  flex: 1;
+}
+.demo-actions { display: flex; gap: .5rem; }
+.btn-demo-seed, .btn-demo-clear {
+  font-size: .8rem;
+  padding: .3rem .75rem;
+  border-radius: 6px;
+  border: 1px solid;
+  cursor: pointer;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.btn-demo-seed  { background: #2d6a2d; color: #fff; border-color: #2d6a2d; }
+.btn-demo-seed:hover  { background: #245424; }
+.btn-demo-clear { background: #fff; color: #b91c1c; border-color: #b91c1c; }
+.btn-demo-clear:hover { background: #fef2f2; }
+
+/* ── Demo card indicator ── */
+.demo-card { border-left: 3px solid #f59e0b; }
+.demo-pill {
+  font-size: .68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  border-radius: 4px;
+  padding: 1px 6px;
+}
