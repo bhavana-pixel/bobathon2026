@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>FoodRescue 🌱</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+
+<header>
+  <div>
+    <h1><span>🌱</span>FoodRescue</h1>
+  </div>
+  <p>Connect surplus food with people who need it — before it's too late.</p>
+</header>
+
+<main>
+  <!-- Controls bar -->
+  <div class="controls">
+    <h2>Available Food Right Now</h2>
+    <button class="btn-primary" id="toggle-form-btn" onclick="toggleForm()">+ Post Food</button>
+  </div>
+
+  <!-- Post creation form -->
+  <div id="post-form-container">
+    <h3>📦 Post Surplus Food</h3>
+    <form id="post-form" onsubmit="submitPost(event)">
+      <div class="form-grid">
+        <div>
+          <label for="donor_name">Your Name / Restaurant</label>
+          <input id="donor_name" type="text" placeholder="e.g. Green Leaf Café" required />
+        </div>
+        <div>
+          <label for="quantity">Quantity / Serves</label>
+          <input id="quantity" type="text" placeholder="e.g. Feeds ~20 people" required />
+        </div>
+        <div class="full">
+          <label for="food_description">Food Description</label>
+          <textarea id="food_description" placeholder="e.g. Vegetable pasta, garden salad, dinner rolls" required></textarea>
+        </div>
+        <div>
+          <label for="location">Pickup Location</label>
+          <input id="location" type="text" placeholder="e.g. 123 Main St, back entrance" required />
+        </div>
+        <div>
+          <label for="pickup_by">Pickup By</label>
+          <input id="pickup_by" type="datetime-local" required />
+        </div>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" onclick="toggleForm()">Cancel</button>
+        <button type="submit" class="btn-submit">Post Food →</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Board -->
+  <div id="board"></div>
+  <div id="empty" style="display:none">
+    <p>🥡</p>
+    <p>No food available right now.<br>Be the first to post something!</p>
+  </div>
+</main>
+
+<!-- PIN modal (shown after a successful post) -->
+<div id="pin-modal" class="modal-overlay" style="display:none">
+  <div class="modal">
+    <h3>🔑 Save Your PIN</h3>
+    <p>You'll need this 4-digit PIN if you want to delete your post later. We don't store it — write it down!</p>
+    <div class="pin-display" id="pin-value">—</div>
+    <div class="modal-actions">
+      <button class="btn-primary" onclick="closePinModal()">Got it!</button>
+    </div>
+  </div>
+</div>
+
+<script src="/static/app.js"></script>
+</body>
+</html>
