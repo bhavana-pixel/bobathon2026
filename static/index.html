@@ -50,6 +50,16 @@
     <button class="btn-primary" id="toggle-form-btn" onclick="toggleForm()">+ Post Food</button>
   </div>
 
+  <!-- Search + Sort bar -->
+  <div class="filter-bar">
+    <input id="search-input" type="search" placeholder="🔍  Search food, location, donor…" oninput="applyFilters()" />
+    <select id="sort-select" onchange="applyFilters()">
+      <option value="newest">Newest first</option>
+      <option value="expiry">Expiring soonest</option>
+      <option value="available">Available only</option>
+    </select>
+  </div>
+
   <!-- Post creation form -->
   <div id="post-form-container">
     <h3>📦 Post Surplus Food</h3>
@@ -117,6 +127,9 @@
     </div>
   </div>
 </footer>
+
+<!-- Toast container -->
+<div id="toast-container"></div>
 
 <script src="/static/app.js"></script>
 </body>

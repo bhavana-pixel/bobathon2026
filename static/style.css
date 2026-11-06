@@ -633,3 +633,128 @@ footer {
   .about-page-card { padding: 1.75rem 1.25rem; }
   #about-btn { top: .75rem; left: .9rem; font-size: .78rem; padding: .28rem .65rem; }
 }
+
+/* ─────────────────────────────────────────
+   FILTER BAR (Search + Sort)
+───────────────────────────────────────── */
+.filter-bar {
+  display: flex;
+  gap: .75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.filter-bar input[type="search"] {
+  flex: 1;
+  min-width: 180px;
+  border: 1.5px solid var(--border-main);
+  border-radius: 8px;
+  padding: .55rem .8rem;
+  font-size: .9rem;
+  font-family: inherit;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  transition: border-color .15s, box-shadow .15s;
+}
+.filter-bar input[type="search"]:focus {
+  outline: none;
+  border-color: #43a047;
+  box-shadow: 0 0 0 3px rgba(67,160,71,.15);
+}
+
+.filter-bar select {
+  border: 1.5px solid var(--border-main);
+  border-radius: 8px;
+  padding: .55rem .8rem;
+  font-size: .875rem;
+  font-family: inherit;
+  font-weight: 600;
+  background: var(--bg-input);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color .15s;
+}
+.filter-bar select:focus { outline: none; border-color: #43a047; }
+
+/* ─────────────────────────────────────────
+   COUNTDOWN CHIP
+───────────────────────────────────────── */
+.countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: .3rem;
+  font-size: .78rem;
+  font-weight: 700;
+  padding: .18rem .55rem;
+  border-radius: 99px;
+  border: 1px solid;
+  margin-top: .1rem;
+  width: fit-content;
+}
+.countdown.urgent {
+  background: #fff3cd;
+  color: #856404;
+  border-color: #ffc107;
+}
+.countdown.critical {
+  background: #fde8e8;
+  color: #b91c1c;
+  border-color: #f87171;
+  animation: pulse-red .9s ease-in-out infinite;
+}
+.countdown.ok {
+  background: var(--badge-bg);
+  color: var(--badge-color);
+  border-color: var(--badge-border);
+}
+[data-theme="dark"] .countdown.urgent  { background: #2a1e00; color: #fbbf24; border-color: #92400e; }
+[data-theme="dark"] .countdown.critical { background: #2a0a0a; color: #fca5a5; border-color: #7f1d1d; }
+
+@keyframes pulse-red {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .6; }
+}
+
+/* ─────────────────────────────────────────
+   TOAST NOTIFICATIONS
+───────────────────────────────────────── */
+#toast-container {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  align-items: center;
+  z-index: 200;
+  pointer-events: none;
+}
+
+.toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  background: #1b5e20;
+  color: #fff;
+  border-radius: 10px;
+  padding: .65rem 1.1rem;
+  font-size: .9rem;
+  font-weight: 600;
+  box-shadow: 0 4px 20px rgba(0,0,0,.25);
+  animation: toastIn .3s cubic-bezier(.34,1.56,.64,1);
+  max-width: 360px;
+  text-align: center;
+}
+.toast.error   { background: #b91c1c; }
+.toast.warning { background: #92400e; }
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(16px) scale(.92); }
+  to   { opacity: 1; transform: translateY(0)     scale(1);  }
+}
+@keyframes toastOut {
+  to { opacity: 0; transform: translateY(8px) scale(.95); }
+}
+.toast.removing { animation: toastOut .25s ease forwards; }

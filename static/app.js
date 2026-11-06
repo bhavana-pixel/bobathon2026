@@ -2,17 +2,12 @@
 // State
 // ---------------------------------------------------------------------------
 let formVisible = false;
-let demoMode = false;
+let demoMode    = false;
+let allPosts    = [];   // master list fetched from server
 
 // ---------------------------------------------------------------------------
 // Utilities
 // ---------------------------------------------------------------------------
-
-function fmt(dtStr) {
-  // Format an ISO / SQLite datetime string for display
-  const d = new Date(dtStr.includes("T") ? dtStr : dtStr.replace(" ", "T") + "Z");
-  return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
-}
 
 function fmtPickup(dtStr) {
   // pickup_by is stored in UTC — append "Z" so the browser converts to local time
@@ -21,17 +16,111 @@ function fmtPickup(dtStr) {
   return d.toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
 }
 
+function pickupDate(dtStr) {
+  const normalized = dtStr.includes("T") ? dtStr : dtStr.replace(" ", "T");
+  return new Date(normalized.endsWith("Z") ? normalized : normalized + "Z");
+}
+
+function esc(str) {
+  const d = document.createElement("div");
+  d.textContent = str;
+  return d.innerHTML;
+}
+
+// ---------------------------------------------------------------------------
+// Feature 1: Countdown helpers
+// ---------------------------------------------------------------------------
+
+function countdownText(dtStr) {
+  const diff = pickupDate(dtStr) - Date.now();
+  if (diff <= 0) return null;
+  const totalMins = Math.floor(diff / 60000);
+  const hrs  = Math.floor(totalMins / 60);
+  const mins = totalMins % 60;
+  if (hrs > 0) return `${hrs}h ${mins}m left`;
+  return `${mins}m left`;
+}
+
+function countdownClass(dtStr) {
+  const diff = pickupDate(dtStr) - Date.now();
+  const mins = diff / 60000;
+  if (mins <= 30)  return "critical";
+  if (mins <= 120) return "urgent";
+  return "ok";
+}
+
+// Tick all countdown chips on the page every 30 s
+function tickCountdowns() {
+  document.querySelectorAll("[data-pickup]").forEach(el => {
+    const dtStr = el.dataset.pickup;
+    const text  = countdownText(dtStr);
+    if (!text) {
+      // expired mid-session — remove the card and reload
+      loadBoard();
+      return;
+    }
+    el.textContent = "⏱ " + text;
+    el.className = "countdown " + countdownClass(dtStr);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Feature 2: Toast notifications
+// ---------------------------------------------------------------------------
+
+function showToast(message, type = "success", duration = 3500) {
+  const container = document.getElementById("toast-container");
+  const toast = document.createElement("div");
+  toast.className = "toast" + (type !== "success" ? " " + type : "");
+  const icon = type === "error" ? "✕" : type === "warning" ? "⚠️" : "✓";
+  toast.textContent = icon + "  " + message;
+  container.appendChild(toast);
+  setTimeout(() => {
+    toast.classList.add("removing");
+    toast.addEventListener("animationend", () => toast.remove());
+  }, duration);
+}
+
 // ---------------------------------------------------------------------------
 // Board rendering
 // ---------------------------------------------------------------------------
 
 async function loadBoard() {
   const res = await fetch("/api/posts");
-  const posts = await res.json();
+  allPosts = await res.json();
+  applyFilters();
+}
+
+// Feature 3 & 4: apply search + sort and render
+function applyFilters() {
+  const query  = (document.getElementById("search-input")?.value || "").toLowerCase().trim();
+  const sort   = document.getElementById("sort-select")?.value || "newest";
+
+  let posts = [...allPosts];
+
+  // Filter: available only
+  if (sort === "available") {
+    posts = posts.filter(p => !p.claimed_by);
+  }
+
+  // Search across food, donor, location
+  if (query) {
+    posts = posts.filter(p =>
+      p.food_description.toLowerCase().includes(query) ||
+      p.donor_name.toLowerCase().includes(query) ||
+      p.location.toLowerCase().includes(query)
+    );
+  }
+
+  // Sort
+  if (sort === "expiry") {
+    posts.sort((a, b) => pickupDate(a.pickup_by) - pickupDate(b.pickup_by));
+  } else {
+    // newest (default) — already sorted by created_at DESC from server
+  }
 
   const board = document.getElementById("board");
   const empty = document.getElementById("empty");
-
   board.innerHTML = "";
 
   if (posts.length === 0) {
@@ -39,18 +128,22 @@ async function loadBoard() {
     return;
   }
   empty.style.display = "none";
-
-  posts.forEach(post => {
-    board.appendChild(buildCard(post));
-  });
+  posts.forEach(post => board.appendChild(buildCard(post)));
 }
 
 function buildCard(post) {
   const claimed = !!post.claimed_by;
-  const isDemo = !!post.is_demo;
+  const isDemo  = !!post.is_demo;
   const card = document.createElement("div");
   card.className = "card" + (claimed ? " claimed" : "") + (isDemo ? " demo-card" : "");
   card.dataset.id = post.id;
+
+  // Feature 1: countdown chip
+  const cdText  = !claimed ? countdownText(post.pickup_by) : null;
+  const cdClass = !claimed && cdText ? countdownClass(post.pickup_by) : "ok";
+  const countdownChip = cdText
+    ? `<span class="countdown ${cdClass}" data-pickup="${post.pickup_by}">⏱ ${esc(cdText)}</span>`
+    : "";
 
   card.innerHTML = `
     <div class="card-header">
@@ -67,6 +160,7 @@ function buildCard(post) {
       <span>📦 ${esc(post.quantity)}</span>
       <span>📍 ${esc(post.location)}</span>
       <span>⏰ Pick up by ${fmtPickup(post.pickup_by)}</span>
+      ${countdownChip}
       ${claimed ? `<span>✅ Claimed by ${esc(post.claimed_by)}</span>` : ""}
     </div>
     ${!claimed ? `
@@ -76,12 +170,6 @@ function buildCard(post) {
     </div>` : ""}
   `;
   return card;
-}
-
-function esc(str) {
-  const d = document.createElement("div");
-  d.textContent = str;
-  return d.innerHTML;
 }
 
 // ---------------------------------------------------------------------------
@@ -96,12 +184,9 @@ function toggleForm() {
   btn.textContent = formVisible ? "✕ Cancel" : "+ Post Food";
 
   if (formVisible) {
-    // Pre-fill pickup_by with 2 hours from now
     const twoHoursLater = new Date(Date.now() + 2 * 60 * 60 * 1000);
-    // datetime-local needs format YYYY-MM-DDTHH:MM
     const local = new Date(twoHoursLater.getTime() - twoHoursLater.getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
+      .toISOString().slice(0, 16);
     document.getElementById("pickup_by").value = local;
     document.getElementById("donor_name").focus();
   }
@@ -118,7 +203,7 @@ async function submitPost(e) {
     food_description: document.getElementById("food_description").value.trim(),
     quantity:         document.getElementById("quantity").value.trim(),
     location:         document.getElementById("location").value.trim(),
-    pickup_by:        document.getElementById("pickup_by").value,   // "YYYY-MM-DDTHH:MM"
+    pickup_by:        document.getElementById("pickup_by").value,
   };
 
   const res = await fetch("/api/posts", {
@@ -129,21 +214,16 @@ async function submitPost(e) {
 
   if (!res.ok) {
     const err = await res.json();
-    alert("Error: " + (err.error || "Unknown error"));
+    showToast(err.error || "Could not post food.", "error");
     return;
   }
 
   const data = await res.json();
-
-  // Reset + hide form
   document.getElementById("post-form").reset();
   toggleForm();
-
-  // Show PIN modal
   document.getElementById("pin-value").textContent = data.pin;
   document.getElementById("pin-modal").style.display = "flex";
-
-  // Refresh board
+  showToast("Food posted successfully!");
   loadBoard();
 }
 
@@ -171,10 +251,11 @@ async function claimPost(id) {
 
   if (!res.ok) {
     const err = await res.json();
-    alert("Could not claim: " + (err.error || "Unknown error"));
+    showToast(err.error || "Could not claim post.", "error");
     return;
   }
 
+  showToast("Post claimed! 🎉 Thank you for helping.");
   loadBoard();
 }
 
@@ -194,10 +275,11 @@ async function deletePost(id) {
 
   if (!res.ok) {
     const err = await res.json();
-    alert("Could not delete: " + (err.error || "Unknown error"));
+    showToast(err.error || "Could not delete post.", "error");
     return;
   }
 
+  showToast("Post deleted.", "warning");
   loadBoard();
 }
 
@@ -216,13 +298,15 @@ async function initDemoMode() {
 
 async function demoSeed() {
   const res = await fetch("/api/demo/seed", { method: "POST" });
-  if (!res.ok) { alert("Could not seed demo data."); return; }
+  if (!res.ok) { showToast("Could not seed demo data.", "error"); return; }
+  showToast("Sample posts loaded.");
   loadBoard();
 }
 
 async function demoClear() {
   const res = await fetch("/api/demo/clear", { method: "DELETE" });
-  if (!res.ok) { alert("Could not clear demo data."); return; }
+  if (!res.ok) { showToast("Could not clear demo data.", "error"); return; }
+  showToast("Sample posts cleared.", "warning");
   loadBoard();
 }
 
@@ -247,10 +331,11 @@ function toggleTheme() {
 // Bootstrap
 // ---------------------------------------------------------------------------
 
-// Restore saved theme preference (default: light)
 applyTheme(localStorage.getItem("fr-theme") === "dark");
 
 initDemoMode();
 loadBoard();
-// Auto-refresh every 30 seconds
+
+// Tick countdowns every 30 s; reload board every 30 s
+setInterval(tickCountdowns, 30_000);
 setInterval(loadBoard, 30_000);
