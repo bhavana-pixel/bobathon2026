@@ -199,6 +199,11 @@ def index():
     return send_from_directory("static", "index.html")
 
 
+@app.route("/about")
+def about():
+    return send_from_directory("static", "about.html")
+
+
 @app.route("/api/demo/status", methods=["GET"])
 def demo_status():
     return jsonify({"demo_mode": DEMO_MODE})
