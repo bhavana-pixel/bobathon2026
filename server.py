@@ -45,6 +45,10 @@ def device_fingerprint(ip: str, user_agent: str) -> str:
     return hashlib.sha256(raw.encode()).hexdigest()
 
 
+# All supported dietary tags (used for validation)
+DIETARY_TAGS = {"halal", "vegetarian", "vegan", "gluten-free", "dairy-free", "nut-free", "kosher"}
+
+
 def init_db():
     with sqlite3.connect(DB_PATH) as db:
         db.execute("""
@@ -58,14 +62,19 @@ def init_db():
                 pin_hash         TEXT    NOT NULL,
                 claimed_by       TEXT,
                 created_at       TEXT    NOT NULL DEFAULT (datetime('now')),
-                is_demo          INTEGER NOT NULL DEFAULT 0
+                is_demo          INTEGER NOT NULL DEFAULT 0,
+                dietary_tags     TEXT    NOT NULL DEFAULT ''
             )
         """)
-        # Add is_demo column to pre-existing databases that lack it
-        try:
-            db.execute("ALTER TABLE posts ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0")
-        except sqlite3.OperationalError:
-            pass  # Column already exists
+        # Add columns to pre-existing databases that lack them
+        for col_sql in [
+            "ALTER TABLE posts ADD COLUMN is_demo INTEGER NOT NULL DEFAULT 0",
+            "ALTER TABLE posts ADD COLUMN dietary_tags TEXT NOT NULL DEFAULT ''",
+        ]:
+            try:
+                db.execute(col_sql)
+            except sqlite3.OperationalError:
+                pass  # Column already exists
         db.execute("""
             CREATE TABLE IF NOT EXISTS claim_attempts (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -120,6 +129,7 @@ DEMO_ENTRIES = [
         "location": "123 Main St, back entrance",
         "hours": 3,
         "claimed_by": None,
+        "dietary_tags": "vegetarian,vegan",
     },
     {
         "donor_name": "Sunrise Bakery",
@@ -128,6 +138,7 @@ DEMO_ENTRIES = [
         "location": "45 Baker Ave, front counter",
         "hours": 2,
         "claimed_by": None,
+        "dietary_tags": "vegetarian",
     },
     {
         "donor_name": "City Hotel Kitchen",
@@ -136,6 +147,7 @@ DEMO_ENTRIES = [
         "location": "Grand City Hotel, loading dock (Level B1)",
         "hours": 4,
         "claimed_by": "Downtown Food Bank",
+        "dietary_tags": "halal,gluten-free",
     },
     {
         "donor_name": "FreshMart Superstore",
@@ -144,6 +156,7 @@ DEMO_ENTRIES = [
         "location": "FreshMart, 8 Commerce Rd — ask for the duty manager",
         "hours": 5,
         "claimed_by": None,
+        "dietary_tags": "vegetarian,gluten-free",
     },
     {
         "donor_name": "Community Diner",
@@ -152,6 +165,7 @@ DEMO_ENTRIES = [
         "location": "77 Elm Street, side door",
         "hours": 2,
         "claimed_by": None,
+        "dietary_tags": "vegan,gluten-free,dairy-free",
     },
 ]
 
@@ -168,8 +182,8 @@ def seed_demo():
             pickup_by = (now + timedelta(hours=entry["hours"])).strftime("%Y-%m-%d %H:%M:%S")
             db.execute(
                 "INSERT INTO posts "
-                "(donor_name, food_description, quantity, pickup_by, location, pin_hash, claimed_by, is_demo) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, 1)",
+                "(donor_name, food_description, quantity, pickup_by, location, pin_hash, claimed_by, is_demo, dietary_tags) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?)",
                 (
                     entry["donor_name"],
                     entry["food_description"],
@@ -178,6 +192,7 @@ def seed_demo():
                     entry["location"],
                     hash_pin(DEMO_PIN),
                     entry["claimed_by"],
+                    entry.get("dietary_tags", ""),
                 ),
             )
         db.commit()
@@ -229,7 +244,7 @@ def demo_clear():
 def get_posts():
     db = get_db()
     rows = db.execute(
-        "SELECT id, donor_name, food_description, quantity, pickup_by, location, claimed_by, created_at, is_demo "
+        "SELECT id, donor_name, food_description, quantity, pickup_by, location, claimed_by, created_at, is_demo, dietary_tags "
         "FROM posts WHERE pickup_by > datetime('now') ORDER BY created_at DESC"
     ).fetchall()
     return jsonify([dict(r) for r in rows])
@@ -251,13 +266,19 @@ def create_post():
     except (ValueError, TypeError):
         return jsonify({"error": "Invalid pickup_by format"}), 400
 
+    # Validate and normalise dietary tags
+    raw_tags = data.get("dietary_tags", [])
+    if not isinstance(raw_tags, list):
+        raw_tags = []
+    tags = ",".join(t for t in raw_tags if t in DIETARY_TAGS)
+
     pin = generate_pin()
     db = get_db()
     cur = db.execute(
-        "INSERT INTO posts (donor_name, food_description, quantity, pickup_by, location, pin_hash, is_demo) "
-        "VALUES (?, ?, ?, ?, ?, ?, 0)",
+        "INSERT INTO posts (donor_name, food_description, quantity, pickup_by, location, pin_hash, is_demo, dietary_tags) "
+        "VALUES (?, ?, ?, ?, ?, ?, 0, ?)",
         (data["donor_name"], data["food_description"], data["quantity"],
-         pickup_utc, data["location"], hash_pin(pin)),
+         pickup_utc, data["location"], hash_pin(pin), tags),
     )
     db.commit()
     return jsonify({"id": cur.lastrowid, "pin": pin}), 201

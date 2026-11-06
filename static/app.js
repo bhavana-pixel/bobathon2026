@@ -96,6 +96,11 @@ function applyFilters() {
   const query  = (document.getElementById("search-input")?.value || "").toLowerCase().trim();
   const sort   = document.getElementById("sort-select")?.value || "newest";
 
+  // Collect checked dietary filters
+  const checkedDiet = Array.from(
+    document.querySelectorAll(".diet-filter-bar input[type=checkbox]:checked")
+  ).map(cb => cb.value);
+
   let posts = [...allPosts];
 
   // Filter: available only
@@ -110,6 +115,14 @@ function applyFilters() {
       p.donor_name.toLowerCase().includes(query) ||
       p.location.toLowerCase().includes(query)
     );
+  }
+
+  // Filter: dietary tags (post must have ALL selected tags)
+  if (checkedDiet.length > 0) {
+    posts = posts.filter(p => {
+      const tags = p.dietary_tags ? p.dietary_tags.split(",") : [];
+      return checkedDiet.every(t => tags.includes(t));
+    });
   }
 
   // Sort
@@ -131,6 +144,25 @@ function applyFilters() {
   posts.forEach(post => board.appendChild(buildCard(post)));
 }
 
+// Map of tag value -> display label + colour class
+const TAG_META = {
+  "halal":       { label: "Halal",        cls: "tag-halal" },
+  "vegetarian":  { label: "Vegetarian",   cls: "tag-vegetarian" },
+  "vegan":       { label: "Vegan",        cls: "tag-vegan" },
+  "gluten-free": { label: "Gluten-Free",  cls: "tag-gluten" },
+  "dairy-free":  { label: "Dairy-Free",   cls: "tag-dairy" },
+  "nut-free":    { label: "Nut-Free",     cls: "tag-nut" },
+  "kosher":      { label: "Kosher",       cls: "tag-kosher" },
+};
+
+function buildDietaryChips(tagsStr) {
+  if (!tagsStr) return "";
+  return tagsStr.split(",")
+    .filter(t => TAG_META[t])
+    .map(t => `<span class="diet-chip ${TAG_META[t].cls}">${TAG_META[t].label}</span>`)
+    .join("");
+}
+
 function buildCard(post) {
   const claimed = !!post.claimed_by;
   const isDemo  = !!post.is_demo;
@@ -145,6 +177,8 @@ function buildCard(post) {
     ? `<span class="countdown ${cdClass}" data-pickup="${post.pickup_by}">⏱ ${esc(cdText)}</span>`
     : "";
 
+  const dietChips = buildDietaryChips(post.dietary_tags);
+
   card.innerHTML = `
     <div class="card-header">
       <span class="card-donor">${esc(post.donor_name)}</span>
@@ -156,6 +190,7 @@ function buildCard(post) {
       </div>
     </div>
     <div class="card-food">${esc(post.food_description)}</div>
+    ${dietChips ? `<div class="card-diet-chips">${dietChips}</div>` : ""}
     <div class="card-meta">
       <span>📦 ${esc(post.quantity)}</span>
       <span>📍 ${esc(post.location)}</span>
@@ -198,12 +233,16 @@ function toggleForm() {
 
 async function submitPost(e) {
   e.preventDefault();
+  const dietary_tags = Array.from(
+    document.querySelectorAll("input[name='dietary_tags']:checked")
+  ).map(cb => cb.value);
   const body = {
     donor_name:       document.getElementById("donor_name").value.trim(),
     food_description: document.getElementById("food_description").value.trim(),
     quantity:         document.getElementById("quantity").value.trim(),
     location:         document.getElementById("location").value.trim(),
     pickup_by:        document.getElementById("pickup_by").value,
+    dietary_tags,
   };
 
   const res = await fetch("/api/posts", {

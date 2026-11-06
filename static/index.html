@@ -60,6 +60,18 @@
     </select>
   </div>
 
+  <!-- Dietary filter chips -->
+  <div class="diet-filter-bar">
+    <span class="diet-filter-label">Filter by:</span>
+    <label class="diet-chip-filter"><input type="checkbox" value="halal"       onchange="applyFilters()"> Halal</label>
+    <label class="diet-chip-filter"><input type="checkbox" value="vegetarian"  onchange="applyFilters()"> Vegetarian</label>
+    <label class="diet-chip-filter"><input type="checkbox" value="vegan"       onchange="applyFilters()"> Vegan</label>
+    <label class="diet-chip-filter"><input type="checkbox" value="gluten-free" onchange="applyFilters()"> Gluten-Free</label>
+    <label class="diet-chip-filter"><input type="checkbox" value="dairy-free"  onchange="applyFilters()"> Dairy-Free</label>
+    <label class="diet-chip-filter"><input type="checkbox" value="nut-free"    onchange="applyFilters()"> Nut-Free</label>
+    <label class="diet-chip-filter"><input type="checkbox" value="kosher"      onchange="applyFilters()"> Kosher</label>
+  </div>
+
   <!-- Post creation form -->
   <div id="post-form-container">
     <h3>📦 Post Surplus Food</h3>
@@ -84,6 +96,18 @@
         <div>
           <label for="pickup_by">Pickup By</label>
           <input id="pickup_by" type="datetime-local" required />
+        </div>
+        <div class="full">
+          <label>Dietary Information <span class="label-hint">(select all that apply)</span></label>
+          <div class="diet-tag-picker">
+            <label class="diet-chip-pick"><input type="checkbox" name="dietary_tags" value="halal">       Halal</label>
+            <label class="diet-chip-pick"><input type="checkbox" name="dietary_tags" value="vegetarian">  Vegetarian</label>
+            <label class="diet-chip-pick"><input type="checkbox" name="dietary_tags" value="vegan">       Vegan</label>
+            <label class="diet-chip-pick"><input type="checkbox" name="dietary_tags" value="gluten-free"> Gluten-Free</label>
+            <label class="diet-chip-pick"><input type="checkbox" name="dietary_tags" value="dairy-free">  Dairy-Free</label>
+            <label class="diet-chip-pick"><input type="checkbox" name="dietary_tags" value="nut-free">    Nut-Free</label>
+            <label class="diet-chip-pick"><input type="checkbox" name="dietary_tags" value="kosher">      Kosher</label>
+          </div>
         </div>
       </div>
       <div class="form-actions">
