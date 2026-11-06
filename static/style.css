@@ -18,7 +18,10 @@
   --border-main:   #c8e6c9;
   --border-card:   #c8e6c9;
   --border-divider:#e8f5e9;
-  --border-claimed:#e0e0e0;
+  --border-claimed:#d5d5d5;
+
+  /* claimed card */
+  --bg-card-claimed: #f0f0f0;
 
   /* text */
   --text-primary:  #1a2e1a;
@@ -70,7 +73,10 @@
   --border-main:   #1e3d1e;
   --border-card:   #1e3d1e;
   --border-divider:#1a301a;
-  --border-claimed:#1a1a1a;
+  --border-claimed:#444444;
+
+  /* claimed card */
+  --bg-card-claimed: #2e2e2e;
 
   --text-primary:  #d4e8d4;
   --text-muted:    #7aaa7a;
@@ -389,9 +395,11 @@ textarea { resize: vertical; min-height: 68px; }
   transform: translateY(-2px);
 }
 .card.claimed {
-  opacity: .5;
+  background: var(--bg-card-claimed);
   border-color: var(--border-claimed);
   box-shadow: none;
+  opacity: .6;
+  filter: grayscale(60%);
 }
 .card.claimed:hover { transform: none; box-shadow: none; }
 
