@@ -162,10 +162,10 @@ def seed_demo():
     with sqlite3.connect(DB_PATH) as db:
         db.execute("DELETE FROM claim_attempts")
         db.commit()
-    now = datetime.now()
+    now = datetime.now(timezone.utc)
     with sqlite3.connect(DB_PATH) as db:
         for entry in DEMO_ENTRIES:
-            pickup_by = (now + timedelta(hours=entry["hours"])).strftime("%Y-%m-%dT%H:%M")
+            pickup_by = (now + timedelta(hours=entry["hours"])).strftime("%Y-%m-%d %H:%M:%S")
             db.execute(
                 "INSERT INTO posts "
                 "(donor_name, food_description, quantity, pickup_by, location, pin_hash, claimed_by, is_demo) "
